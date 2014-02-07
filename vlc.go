@@ -46,6 +46,17 @@ func (s *Server) Play()(error){
 	
 	return nil	
 }
+
+func (s *Server) Pause()(error){
+	v := url.Values{}
+	v.Set("command", "pl_pause")
+	
+	http.Get(s.addr+statusPath+v.Encode())
+	//TODO error testing
+	
+	return nil	
+}
+
 func (s *Server) Stop()(error){
 	v := url.Values{}
 	v.Set("command", "pl_stop")
