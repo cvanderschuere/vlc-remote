@@ -7,6 +7,7 @@ import(
 	"encoding/json"
 	"io/ioutil"
 	"fmt"
+	"errors"
 )
 
 type Server struct{
@@ -22,7 +23,7 @@ type Item struct{
 	ID string
 }
 
-const path = "/requests/status.json?"
+const statusPath = "/requests/status.json?"
 
 func New(address string)(*Server,error){
 	s := new(Server)
@@ -40,7 +41,7 @@ func (s *Server) Play()(error){
 	v := url.Values{}
 	v.Set("command", "pl_play")
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
 	
 	return nil	
@@ -49,17 +50,22 @@ func (s *Server) Stop()(error){
 	v := url.Values{}
 	v.Set("command", "pl_stop")
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
 	
 	return nil
 }
-func (s *Server) Next()(error){
+
+//Removes item from playlist
+func (s *Server) Next()(error){	
 	v := url.Values{}
 	v.Set("command", "pl_next")
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
+	
+	//Delete first
+	s.Delete(s.Playlist()[0].URI)
 	
 	return nil
 }
@@ -67,7 +73,7 @@ func (s *Server) Previous()(error){
 	v := url.Values{}
 	v.Set("command", "pl_previous")
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
 	
 	return nil
@@ -78,22 +84,26 @@ func (s *Server) Previous()(error){
 //
 
 func (s *Server) Playlist()([]Item){
-	playlist,err:= http.Get(s.addr+"/requests/playlist.json")
+	resp,err:= http.Get(s.addr+"/requests/playlist.json")
 	if err != nil{
+		fmt.Println(err)
 		return nil
 	}
 	
-	data,_ := ioutil.ReadAll(playlist.Body);
+	data,_ := ioutil.ReadAll(resp.Body);
+		
+	var val Item
+	err = json.Unmarshal(data, &val)
+	if err != nil{
+		fmt.Println(err)
+	}
 	
-	var val *Item
-	json.Unmarshal(data, val)
-	
-	if val == nil{
+	if len(val.Children) == 0{
 		return nil
-	}else{
-		fmt.Println()
-		return val.Children[0].Children
-	}		
+	}
+
+	playlist := val.Children[0]
+	return playlist.Children
 }
 
 func (s *Server) Add(uri string)(error){
@@ -101,7 +111,7 @@ func (s *Server) Add(uri string)(error){
 	v.Set("command", "in_enqueue")
 	v.Set("input",uri)
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
 	
 	return nil
@@ -112,16 +122,33 @@ func (s *Server) AddAndPlay(uri string)(error){
 	v.Set("command", "in_play")
 	v.Set("input",uri)
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
 
 	return nil
 }
+
+func (s *Server) Delete(uri string)(error){
+	//Find item in playlist
+	for _,item := range s.Playlist(){
+		if item.URI == uri{
+			v := url.Values{}
+			v.Set("command", "pl_delete")
+			v.Set("id",item.ID)
+	
+			http.Get(s.addr+statusPath+v.Encode())
+			return nil
+		}
+	}
+	
+	return errors.New("Not Found")
+}
+
 func (s *Server) EmptyPlaylist()(error){
 	v := url.Values{}
 	v.Set("command", "pl_empty")
 	
-	http.Get(s.addr+"/requests/status.json?"+v.Encode())
+	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
 	
 	return nil
