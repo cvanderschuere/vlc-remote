@@ -82,6 +82,25 @@ func (s *Server) Previous()(error){
 //
 // Playlist
 //
+func (s *Server) NowPlaying()(string){
+	resp,_ := http.Get(s.addr+statusPath)
+	data,_ := ioutil.ReadAll(resp.Body);
+	
+	var val1 map[string](interface{})
+	json.Unmarshal(data, &val1)
+	
+	info,ok := val1["information"].(map[string]interface{})
+	if ok{
+		category := info["category"].(map[string]interface{})
+		meta := category["meta"].(map[string]interface{})
+		file := meta["filename"].(string)
+	
+		return file //URI of current song
+	}else{
+		//No song playing
+		return ""
+	}
+}
 
 func (s *Server) Playlist()([]Item){
 	resp,err:= http.Get(s.addr+"/requests/playlist.json")
