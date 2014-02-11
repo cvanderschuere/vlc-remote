@@ -94,7 +94,10 @@ func (s *Server) Previous()(error){
 func (s *Server) SetVolume(vol uint8)(error){
 	v := url.Values{}
 	v.Set("command", "volume")
-	v.Set("val",fmt.Sprintf("%d%%",vol))
+	
+	val := (float64(vol)/100.0)*255.0
+	volString := fmt.Sprintf("%d",int(val))	
+	v.Set("val",volString)
 	
 	http.Get(s.addr+statusPath+v.Encode())
 	//TODO error testing
