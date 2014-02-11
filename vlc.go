@@ -90,6 +90,18 @@ func (s *Server) Previous()(error){
 	return nil
 }
 
+//Recieves volume as a percentage 0-100
+func (s *Server) SetVolume(vol uint8)(error){
+	v := url.Values{}
+	v.Set("command", "volume")
+	v.Set("val",fmt.Sprintf("%d%%",vol))
+	
+	http.Get(s.addr+statusPath+v.Encode())
+	//TODO error testing
+	
+	return nil
+}
+
 //
 // Playlist
 //
